@@ -34,7 +34,7 @@ class TemplateManagerTest extends TestCase
             new MeetingPoint(1, "http://lambda.to", "paris 5eme")
         );
 
-        ApplicationContext::getInstance()->setCurrentUser(
+        ApplicationContext::setCurrentUser(
             new Learner(1, "toto", "bob", "toto@bob.to")
         );
 
@@ -51,13 +51,14 @@ class TemplateManagerTest extends TestCase
     {
         $lesson = LessonRepository::getInstance()->getById(1);
 
-        $template = new Template(1, "Your lesson ID is {{lesson.id}}", "Content");
+        $template = new Template(1, "Your lesson ID is {{lesson:id}}", "Content");
 
         $message = $this->template_manager->parseTemplate($template, [
                 "lesson" => $lesson
         ]);
 
-        self::assertEquals("Your lesson ID is 1", $message->getContent());
+        self::assertEquals("Your lesson ID is 1", $message->getSubject());
+
     }
 
     // Test content OK
@@ -65,7 +66,7 @@ class TemplateManagerTest extends TestCase
     {
         $lesson = LessonRepository::getInstance()->getById(1);
 
-        $template = new Template(1, "Subject", "Your lesson ID is {{lesson.id}}");
+        $template = new Template(1, "Subject", "Your lesson ID is {{lesson:id}}");
 
         $message = $this->template_manager->parseTemplate($template, [
             "lesson" => $lesson
@@ -77,7 +78,7 @@ class TemplateManagerTest extends TestCase
     // Test dynamic key mapping OK
     public function testDynamicKeyMappingOK(): void
     {
-        $template = new Template(1, "Subject", "User first name is {{user.first_name}}");
+        $template = new Template(1, "Subject", "User first name is {{user:first_name}}");
 
         $message = $this->template_manager->parseTemplate($template, [
             "user" => [
@@ -91,7 +92,7 @@ class TemplateManagerTest extends TestCase
     // Test dynamic nested key
     public function testDynamicNestedKeyOK(): void
     {
-        $template = new Template(1, "Subject", "User first name is {{user.info.first_name}}");
+        $template = new Template(1, "Subject", "User first name is {{user.info:first_name}}");
 
         $message = $this->template_manager->parseTemplate($template, [
             "user" => [
@@ -127,38 +128,31 @@ class TemplateManagerTest extends TestCase
     // Test err if one key not found
     public function testErrIfOneKeyNotFound(): void
     {
-        $template = new Template(1, "Subject", "User first name is {{user.last_name}}");
+        self::expectException(KeyNotFoundError::class);
+
+        $template = new Template(1, "Subject", "User first name is {{user:last_name}}");
 
         $this->template_manager->parseTemplate($template, [
             "user" => [
                 "first_name" => "Tata"
             ]
         ]);
-
-        self::expectException(KeyNotFoundError::class);
     }
 
 
     /**
-     * @todo a remove
      * @return void
      */
-    public function testOldSystem(): void
+    public function testMailOrnikar(): void
     {
-        $startAt = new \DateTime("2021-01-01 12:00:00");
-        $endAt = (clone $startAt)->add(new \DateInterval('PT1H'));
-
-        $lesson = new Lesson(1, 1 , 1, $startAt, $endAt);
-        LessonRepository::getInstance()->save($lesson);
-
         $template = new Template(
             1,
-            'Votre leçon de conduite avec [lesson:instructor_name]',
+            'Votre leçon de conduite avec {{instructor:firstname}}',
             "
-Bonjour [user:first_name],
+Bonjour {{user:firstname}},
 
-La reservation du [lesson:start_date] de [lesson:start_time] à [lesson:end_time] avec [lesson:instructor_name] a bien été prise en compte!
-Voici votre point de rendez-vous: [lesson:meeting_point].
+La reservation du {{lesson:start_date}} de {{lesson:startTime}} à {{lesson:endTime}} avec {{instructor:firstname}} a bien été prise en compte!
+Voici votre point de rendez-vous: {{meeting_point:name}}.
 
 Bien cordialement,
 
@@ -169,15 +163,18 @@ L'équipe Ornikar
         $message = $templateManager->parseTemplate(
             $template,
             [
-                'lesson' => $lesson
+                "lesson" => LessonRepository::getInstance()->getById(1),
+                "instructor" => InstructorRepository::getInstance()->getById(1),
+                "meeting_point" => MeetingPointRepository::getInstance()->getById(1),
+                "user" => ApplicationContext::getCurrentUser()
             ]
         );
 
-        self::assertEquals('Votre leçon de conduite avec jean', $message->getSubject());
+        self::assertEquals('Votre leçon de conduite avec Jean', $message->getSubject());
         self::assertEquals("
 Bonjour Toto,
 
-La reservation du 01/01/2021 de 12:00 à 13:00 avec jean a bien été prise en compte!
+La reservation du 01/01/2021 de 12:00 à 13:00 avec Jean a bien été prise en compte!
 Voici votre point de rendez-vous: paris 5eme.
 
 Bien cordialement,
