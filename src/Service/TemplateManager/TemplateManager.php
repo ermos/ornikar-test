@@ -1,5 +1,5 @@
 <?php
-namespace App;
+namespace App\Service\TemplateManager;
 
 use App\Context\ApplicationContext;
 use App\Entity\Instructor;
@@ -12,17 +12,29 @@ use App\Repository\MeetingPointRepository;
 
 class TemplateManager
 {
-    public function getTemplateComputed(Template $tpl, array $data)
+    /**
+     * Allows to parse and inject data inside template
+     * @param Template $tpl
+     * @param array $data
+     * @return Template
+     */
+    public function parseTemplate(Template $tpl, array $data = [])
     {
-        if (!$tpl) {
-            throw new \RuntimeException('no tpl given');
-        }
+        return clone($tpl)
+            ->setSubject($this->computeText($tpl->getSubject(), $data))
+            ->setContent($this->computeText($tpl->getContent(), $data));
+    }
 
-        $replaced = clone($tpl);
-        $replaced->subject = $this->computeText($replaced->subject, $data);
-        $replaced->content = $this->computeText($replaced->content, $data);
-
-        return $replaced;
+    /**
+     * Allows to parse and inject data inside template
+     * @deprecated use parseTemplate instead of this method
+     * @param Template $tpl
+     * @param array $data
+     * @return Template
+     */
+    public function getTemplateComputed(Template $tpl, array $data = [])
+    {
+        return $this->parseTemplate($tpl, $data);
     }
 
     private function computeText($text, array $data)
