@@ -2,7 +2,9 @@
 
 namespace App\Entity;
 
-class Learner
+use App\Core\Entity;
+
+class Learner extends Entity
 {
     public function __construct(
         public readonly int $id,

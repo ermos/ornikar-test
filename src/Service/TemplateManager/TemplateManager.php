@@ -37,47 +37,9 @@ class TemplateManager
         return $this->parseTemplate($tpl, $data);
     }
 
-    private function computeText($text, array $data)
+    private function computeText(string $text, array $data): string
     {
-        $APPLICATION_CONTEXT = ApplicationContext::getInstance();
-
         $lesson = (isset($data['lesson']) and $data['lesson'] instanceof Lesson) ? $data['lesson'] : null;
-
-        if ($lesson)
-        {
-            $_lessonFromRepository = LessonRepository::getInstance()->getById($lesson->id);
-            $usefulObject = MeetingPointRepository::getInstance()->getById($lesson->meetingPointId);
-            $instructorOfLesson = InstructorRepository::getInstance()->getById($lesson->instructorId);
-
-            if(strpos($text, '[lesson:instructor_link]') !== false){
-                $text = str_replace('[instructor_link]',  'instructors/' . $instructorOfLesson->id .'-'.urlencode($instructorOfLesson->firstname), $text);
-            }
-
-            $containsSummaryHtml = strpos($text, '[lesson:summary_html]');
-            $containsSummary     = strpos($text, '[lesson:summary]');
-
-            if ($containsSummaryHtml !== false || $containsSummary !== false) {
-                if ($containsSummaryHtml !== false) {
-                    $text = str_replace(
-                        '[lesson:summary_html]',
-                        Lesson::renderHtml($_lessonFromRepository),
-                        $text
-                    );
-                }
-                if ($containsSummary !== false) {
-                    $text = str_replace(
-                        '[lesson:summary]',
-                        Lesson::renderText($_lessonFromRepository),
-                        $text
-                    );}}
-
-            (strpos($text, '[lesson:instructor_name]') !== false) and $text = str_replace('[lesson:instructor_name]',$instructorOfLesson->firstname,$text);
-        }
-
-        if ($lesson->meetingPointId) {
-            if(strpos($text, '[lesson:meeting_point]') !== false)
-                $text = str_replace('[lesson:meeting_point]', $usefulObject->name, $text);
-        }
 
         if(strpos($text, '[lesson:start_date]') !== false)
             $text = str_replace('[lesson:start_date]', $lesson->startTime->format('d/m/Y'), $text);
@@ -98,7 +60,7 @@ class TemplateManager
          * USER
          * [user:*]
          */
-        $_user  = (isset($data['user'])  and ($data['user']  instanceof Learner))  ? $data['user']  : $APPLICATION_CONTEXT->getCurrentUser();
+        $_user  = (isset($data['user'])  and ($data['user']  instanceof Learner))  ? $data['user']  : ApplicationContext::getCurrentUser();
         if($_user) {
             (strpos($text, '[user:first_name]') !== false) and $text = str_replace('[user:first_name]'       , ucfirst(strtolower($_user->firstname)), $text);
         }

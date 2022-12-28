@@ -2,12 +2,14 @@
 
 namespace App\Entity;
 
-class Template
+use App\Core\Entity;
+
+class Template extends Entity
 {
     public function __construct(
-        protected readonly int $id,
-        protected string $subject,
-        protected string $content,
+        public readonly int $id,
+        public string $subject,
+        public string $content,
     ) { }
 
     /**
