@@ -63,12 +63,20 @@ class TemplateManager
         return $text;
     }
 
+    /**
+     * @throws KeyNotFoundError
+     */
     private function walk(EntityInterface|array $object, array $next = []): EntityInterface|array
     {
         if (!empty($next)) {
             $key = $next[0];
             $result = (is_array($object) ? $object[$next[0]] : $object->$key) ?? null;
             array_shift($next);
+
+            if (!is_array($result) && !is_object($object)) {
+                throw new KeyNotFoundError();
+            }
+
             return $this->walk($result, $next);
         }
         return $object;
