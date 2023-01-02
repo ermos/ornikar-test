@@ -7,17 +7,15 @@ use App\Helper\SingletonTrait;
 
 class ApplicationContext
 {
-    use SingletonTrait;
+    private static Learner $current_user;
 
-    private Learner $currentUser;
-
-    public function getCurrentUser(): Learner
+    public static function getCurrentUser(): Learner
     {
-        return $this->currentUser;
+        return self::$current_user;
     }
 
-    public function setCurrentUser(Learner $currentUser): void
+    public static function setCurrentUser(Learner $currentUser): void
     {
-        $this->currentUser = $currentUser;
+        self::$current_user = $currentUser;
     }
 }
